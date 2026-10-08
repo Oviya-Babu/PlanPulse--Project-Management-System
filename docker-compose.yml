@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pms-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: pms
+      POSTGRES_PASSWORD: pms_dev_password
+      POSTGRES_DB: pms_dev
+    volumes:
+      - pms_pgdata:/var/lib/postgresql/data
+      - ./docker-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pms -d pms_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pms_pgdata:
