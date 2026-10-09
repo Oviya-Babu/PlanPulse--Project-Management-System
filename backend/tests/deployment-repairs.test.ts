@@ -21,6 +21,19 @@ describe('Deployment Repairs Suite (CORS, Proxy, Registration Contract)', () => 
       expect(res.headers['access-control-allow-methods']).toContain('POST');
     });
 
+    it('returns 204 with CORS headers for truncated Vercel domain (plan-pulse-project-management-syste.vercel.app)', async () => {
+      const truncatedOrigin = 'https://plan-pulse-project-management-syste.vercel.app';
+      const res = await request(app)
+        .options('/api/auth/login')
+        .set('Origin', truncatedOrigin)
+        .set('Access-Control-Request-Method', 'POST')
+        .set('Access-Control-Request-Headers', 'Content-Type,Authorization');
+
+      expect(res.status).toBe(204);
+      expect(res.headers['access-control-allow-origin']).toBe(truncatedOrigin);
+      expect(res.headers['access-control-allow-credentials']).toBe('true');
+    });
+
     it('returns 204 with CORS headers for Vercel preview domain pattern', async () => {
       const previewOrigin = 'https://plan-pulse-project-management-system-preview-123.vercel.app';
       const res = await request(app)

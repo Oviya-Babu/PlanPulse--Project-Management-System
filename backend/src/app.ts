@@ -50,9 +50,11 @@ export function createApp(): Express {
     .filter(Boolean);
 
   const standardOrigins = [
-    'https://plan-pulse-project-management-system-nxfwvyzvr.vercel.app',
+    'https://plan-pulse-project-management-syste.vercel.app',
     'https://plan-pulse-project-management-system.vercel.app',
+    'https://plan-pulse-project-management-system-nxfwvyzvr.vercel.app',
     'https://planpulse-project-management-system.vercel.app',
+    'https://planpulse.vercel.app',
     'http://localhost:5173',
     'http://localhost:3000',
     'http://localhost:4173',
@@ -60,12 +62,13 @@ export function createApp(): Express {
   ];
 
   const allowedOriginsSet = new Set([...parsedOrigins, ...standardOrigins]);
-  const vercelPreviewRegex = /^https:\/\/(plan-pulse-project-management-system|planpulse)[a-z0-9-]*\.vercel\.app$/i;
+  // Matches any Vercel domain associated with PlanPulse (including truncated or preview hashes)
+  const vercelDomainRegex = /^https:\/\/[a-z0-9-]*plan[-]?pulse[a-z0-9-]*\.vercel\.app$/i;
 
   const isOriginAllowed = (origin: string): boolean => {
     const normalized = origin.trim().replace(/\/+$/, '');
     if (allowedOriginsSet.has(normalized)) return true;
-    if (vercelPreviewRegex.test(normalized)) return true;
+    if (vercelDomainRegex.test(normalized)) return true;
     return false;
   };
 
