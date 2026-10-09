@@ -10,6 +10,7 @@ import healthRoutes from './routes/health.routes';
 import authRoutes from './routes/auth.routes';
 import projectsRoutes from './routes/projects.routes';
 import tasksRoutes from './routes/tasks.routes';
+import dashboardRoutes from './routes/dashboard.routes';
 
 export function createApp(): Express {
   const app = express();
@@ -66,6 +67,7 @@ export function createApp(): Express {
   app.use('/api', authRoutes);
   app.use('/api/projects', projectsRoutes);
   app.use('/api/tasks', tasksRoutes);
+  app.use('/api/dashboard', dashboardRoutes);
 
   // 404 handler
   app.use(notFoundHandler);

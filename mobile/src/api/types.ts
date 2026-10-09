@@ -41,6 +41,7 @@ export interface DashboardMetrics {
   completedTasks: number;
   pendingTasks: number;
   projectsInProgress: number;
+  inProgressTasks?: number;
 }
 
 export interface HealthResponse {
