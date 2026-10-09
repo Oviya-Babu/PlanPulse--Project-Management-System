@@ -2,6 +2,7 @@ import prisma from '../lib/prisma';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 import { CreateTaskInput, UpdateTaskInput, TaskQueryInput } from '../schemas/task.schemas';
 import { NotFoundError } from '../errors';
+import { escapeSearchTerm } from '../lib/search';
 
 export interface TaskDto {
   id: string;
@@ -92,7 +93,7 @@ export async function listTasks(
 
   if (filters?.search && filters.search.trim().length > 0) {
     whereClause.name = {
-      contains: filters.search.trim(),
+      contains: escapeSearchTerm(filters.search.trim()),
       mode: 'insensitive',
     };
   }

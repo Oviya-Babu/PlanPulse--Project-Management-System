@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Search, Folder, Calendar, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -15,13 +15,21 @@ import { getApiErrorMessage } from '../lib/api';
 
 export const ProjectsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | ProjectStatus>('ALL');
+  // Filters synced with URL search params (AC-SRCH-06)
+  const search = searchParams.get('search') || '';
+  const statusFilter = (searchParams.get('status') as ProjectStatus | 'ALL') || 'ALL';
+
+  const updateFilters = (newSearch: string, newStatus: string) => {
+    const next: Record<string, string> = {};
+    if (newSearch.trim()) next.search = newSearch;
+    if (newStatus && newStatus !== 'ALL') next.status = newStatus;
+    setSearchParams(next, { replace: true });
+  };
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -108,7 +116,7 @@ export const ProjectsPage: React.FC = () => {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => updateFilters(e.target.value, statusFilter)}
             placeholder="Search projects by name..."
             className="pl-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
           />
@@ -119,7 +127,7 @@ export const ProjectsPage: React.FC = () => {
           {(['ALL', 'NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'] as const).map((status) => (
             <button
               key={status}
-              onClick={() => setStatusFilter(status)}
+              onClick={() => updateFilters(search, status)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                 statusFilter === status
                   ? 'bg-indigo-600 text-white shadow-sm dark:bg-indigo-500'
@@ -168,10 +176,7 @@ export const ProjectsPage: React.FC = () => {
             title="No projects match your search or filters."
             description="Try adjusting your search query or status filter to see other projects."
             actionLabel="Clear Filters"
-            onAction={() => {
-              setSearch('');
-              setStatusFilter('ALL');
-            }}
+            onAction={() => updateFilters('', 'ALL')}
           />
         ) : (
           <EmptyState

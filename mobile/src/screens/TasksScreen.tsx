@@ -336,6 +336,19 @@ export const TasksScreen: React.FC = () => {
               ? 'Try clearing your filters to view other tasks.'
               : 'Tap the + button below to create your first task.'}
           </Text>
+          {searchQuery || statusFilter !== 'ALL' || priorityFilter !== 'ALL' ? (
+            <Button
+              mode="text"
+              onPress={() => {
+                setSearchQuery('');
+                setStatusFilter('ALL');
+                setPriorityFilter('ALL');
+              }}
+              style={styles.retryButton}
+            >
+              Clear Filters
+            </Button>
+          ) : null}
         </View>
       ) : (
         <FlatList

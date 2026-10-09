@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Search, CheckSquare } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -13,16 +14,37 @@ import { getProjects } from '../api/projects';
 import { getApiErrorMessage } from '../lib/api';
 
 export const TasksPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | TaskStatus>('ALL');
-  const [priorityFilter, setPriorityFilter] = useState<'ALL' | TaskPriority>('ALL');
-  const [projectFilter, setProjectFilter] = useState<string>('ALL');
+  // Filters synced with URL search params (AC-SRCH-06)
+  const search = searchParams.get('search') || '';
+  const statusFilter = (searchParams.get('status') as TaskStatus | 'ALL') || 'ALL';
+  const priorityFilter = (searchParams.get('priority') as TaskPriority | 'ALL') || 'ALL';
+  const projectFilter = searchParams.get('projectId') || 'ALL';
+
+  const updateFilters = (updates: {
+    search?: string;
+    status?: string;
+    priority?: string;
+    projectId?: string;
+  }) => {
+    const nextSearch = updates.search !== undefined ? updates.search : search;
+    const nextStatus = updates.status !== undefined ? updates.status : statusFilter;
+    const nextPriority = updates.priority !== undefined ? updates.priority : priorityFilter;
+    const nextProject = updates.projectId !== undefined ? updates.projectId : projectFilter;
+
+    const next: Record<string, string> = {};
+    if (nextSearch.trim()) next.search = nextSearch;
+    if (nextStatus && nextStatus !== 'ALL') next.status = nextStatus;
+    if (nextPriority && nextPriority !== 'ALL') next.priority = nextPriority;
+    if (nextProject && nextProject !== 'ALL') next.projectId = nextProject;
+
+    setSearchParams(next, { replace: true });
+  };
 
   // Dialog states
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -114,7 +136,7 @@ export const TasksPage: React.FC = () => {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => updateFilters({ search: e.target.value })}
             placeholder="Search tasks by name..."
             className="pl-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
           />
@@ -125,7 +147,7 @@ export const TasksPage: React.FC = () => {
           {/* Status filter */}
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as 'ALL' | TaskStatus)}
+            onChange={(e) => updateFilters({ status: e.target.value })}
             className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
           >
             <option value="ALL">All Statuses</option>
@@ -137,7 +159,7 @@ export const TasksPage: React.FC = () => {
           {/* Priority filter */}
           <select
             value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value as 'ALL' | TaskPriority)}
+            onChange={(e) => updateFilters({ priority: e.target.value })}
             className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
           >
             <option value="ALL">All Priorities</option>
@@ -149,7 +171,7 @@ export const TasksPage: React.FC = () => {
           {/* Project filter */}
           <select
             value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
+            onChange={(e) => updateFilters({ projectId: e.target.value })}
             className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 max-w-[160px] truncate"
           >
             <option value="ALL">All Projects</option>
@@ -184,12 +206,14 @@ export const TasksPage: React.FC = () => {
             title="No tasks match your search or filters."
             description="Try clearing your filters or search keywords to view other tasks."
             actionLabel="Clear Filters"
-            onAction={() => {
-              setSearch('');
-              setStatusFilter('ALL');
-              setPriorityFilter('ALL');
-              setProjectFilter('ALL');
-            }}
+            onAction={() =>
+              updateFilters({
+                search: '',
+                status: 'ALL',
+                priority: 'ALL',
+                projectId: 'ALL',
+              })
+            }
           />
         ) : (
           <EmptyState

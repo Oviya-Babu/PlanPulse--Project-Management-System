@@ -2,6 +2,7 @@ import prisma from '../lib/prisma';
 import { ProjectStatus, TaskStatus } from '@prisma/client';
 import { CreateProjectInput, UpdateProjectInput } from '../schemas/project.schemas';
 import { NotFoundError, ValidationError } from '../errors';
+import { escapeSearchTerm } from '../lib/search';
 
 export interface ProjectDto {
   id: string;
@@ -77,7 +78,7 @@ export async function listProjects(
 
   if (filters?.search && filters.search.trim().length > 0) {
     whereClause.name = {
-      contains: filters.search.trim(),
+      contains: escapeSearchTerm(filters.search.trim()),
       mode: 'insensitive',
     };
   }
