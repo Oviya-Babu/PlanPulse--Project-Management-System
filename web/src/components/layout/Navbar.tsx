@@ -1,7 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, CheckSquare, Moon, Sun, Activity, LogOut } from 'lucide-react';
+import {
+  LayoutDashboard,
+  FolderKanban,
+  CheckSquare,
+  Moon,
+  Sun,
+  Activity,
+  LogOut,
+  User,
+  ChevronDown,
+  BarChart3,
+} from 'lucide-react';
 import { Button } from '../ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '../ui/dropdown-menu';
+import { ProfileModal } from '../profile/ProfileModal';
 import { useAuth } from '../../context/AuthContext';
 
 interface NavbarProps {
@@ -13,6 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleTheme, isDark }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const navItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -86,29 +107,90 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleTheme, isDark }) => {
           )}
 
           {isAuthenticated && user && (
-            <div className="flex items-center gap-3 pl-2 border-l border-border">
-              <div className="hidden sm:flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs">
-                  {getInitials(user.fullName)}
-                </div>
-                <div className="text-xs">
-                  <p className="font-medium text-foreground leading-none">{user.fullName}</p>
-                  <p className="text-muted-foreground text-[10px] mt-0.5 max-w-[120px] truncate">
-                    {user.email}
-                  </p>
-                </div>
-              </div>
+            <div className="flex items-center gap-2 pl-2 border-l border-border">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1.5 rounded-full sm:rounded-lg hover:bg-secondary/80 border border-transparent hover:border-border transition-all text-left focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer group"
+                    aria-label="User profile and menu"
+                  >
+                    <div className="relative flex-shrink-0">
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-primary to-blue-500 text-primary-foreground flex items-center justify-center font-bold text-xs shadow-sm ring-1 ring-background">
+                        {getInitials(user.fullName)}
+                      </div>
+                      <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-background" />
+                    </div>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive gap-1.5 h-8 px-2 text-xs"
-                title="Log out"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Log out</span>
-              </Button>
+                    <div className="hidden sm:block text-xs max-w-[130px]">
+                      <p className="font-semibold text-foreground leading-none group-hover:text-primary transition-colors truncate">
+                        {user.fullName}
+                      </p>
+                      <p className="text-muted-foreground text-[10px] mt-0.5 truncate">
+                        {user.email}
+                      </p>
+                    </div>
+
+                    <ChevronDown className="hidden sm:block h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors ml-0.5" />
+                  </button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align="end" className="w-60">
+                  <DropdownMenuLabel className="font-normal p-2.5">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-semibold text-foreground leading-none">{user.fullName}</p>
+                      <p className="text-xs text-muted-foreground leading-none truncate">{user.email}</p>
+                      <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-border/50 text-[10px] text-emerald-600 font-medium">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        <span>Workspace Owner</span>
+                      </div>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    onClick={() => setIsProfileModalOpen(true)}
+                    className="gap-2 cursor-pointer font-medium"
+                  >
+                    <User className="h-4 w-4 text-primary" />
+                    <span>View Profile & Stats</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={() => navigate('/profile')}
+                    className="gap-2 cursor-pointer"
+                  >
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    <span>Account Overview</span>
+                  </DropdownMenuItem>
+
+                  {onToggleTheme && (
+                    <DropdownMenuItem
+                      onClick={onToggleTheme}
+                      className="gap-2 cursor-pointer sm:hidden"
+                    >
+                      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                      <span>Toggle Theme</span>
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Log Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Profile Modal */}
+              <ProfileModal
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+              />
             </div>
           )}
         </div>

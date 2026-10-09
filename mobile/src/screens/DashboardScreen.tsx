@@ -13,12 +13,14 @@ import {
   Button,
   useTheme,
   ProgressBar,
+  Avatar,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RootTabParamList } from '../navigation/types';
 import { DashboardMetrics } from '../api/types';
 import { fetchDashboardMetrics } from '../api/dashboard';
+import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme';
 
 type DashboardNavProp = BottomTabNavigationProp<RootTabParamList, 'Dashboard'>;
@@ -26,6 +28,7 @@ type DashboardNavProp = BottomTabNavigationProp<RootTabParamList, 'Dashboard'>;
 export const DashboardScreen: React.FC = () => {
   const theme = useTheme();
   const navigation = useNavigation<DashboardNavProp>();
+  const { user } = useAuth();
 
   const [refreshing, setRefreshing] = useState(false);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -56,6 +59,15 @@ export const DashboardScreen: React.FC = () => {
 
   const onRefresh = () => {
     loadData(true);
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
   };
 
   const totalTasks = metrics?.totalTasks ?? 0;
@@ -94,14 +106,31 @@ export const DashboardScreen: React.FC = () => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
       }
     >
-      {/* Header section */}
+      {/* Header section with clickable user avatar */}
       <View style={styles.header}>
-        <Text variant="headlineMedium" style={styles.title}>
-          PlanPulse
-        </Text>
-        <Text variant="bodyMedium" style={styles.subtitle}>
-          Workspace Metrics & Delivery Progress
-        </Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerTextGroup}>
+            <Text variant="headlineMedium" style={styles.title}>
+              PlanPulse
+            </Text>
+            <Text variant="bodyMedium" style={styles.subtitle}>
+              Workspace Metrics & Delivery Progress
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Profile')}
+            style={styles.profileAvatarButton}
+            accessibilityLabel="View profile"
+            accessibilityRole="button"
+          >
+            <Avatar.Text
+              size={40}
+              label={getInitials(user?.fullName)}
+              style={{ backgroundColor: colors.primary }}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Progress card if tasks exist */}
@@ -246,6 +275,21 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerTextGroup: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  profileAvatarButton: {
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
   },
   title: {
     fontWeight: 'bold',
