@@ -257,13 +257,63 @@ npm run build:mobile
 
 ---
 
-## Deployment & Distribution Guidelines
+## Production Deployment (Render + Vercel)
 
-### 1. Production Backend & Web Deployment
-- **Backend (Render / Railway / VPS / Docker)**: Deploy the Node.js application pointing `DATABASE_URL` to a managed PostgreSQL database (e.g., Supabase, Neon, or RDS). Set `NODE_ENV=production` and a strong `JWT_SECRET`.
-- **Web (Vercel / Netlify / Cloudflare Pages)**: Deploy the static output directory `web/dist` with environment variable `VITE_API_URL="https://your-api-domain.com/api"`.
+### Live Production Endpoints
 
-### 2. Standalone Android APK Distribution
+| Service | Platform | URL / Endpoint | Details |
+|---|---|---|---|
+| **Web Frontend** | Vercel | [`plan-pulse-project-management-system-nxfwvyzvr.vercel.app`](https://plan-pulse-project-management-system-nxfwvyzvr.vercel.app) | React 18, Vite, TailwindCSS, SPA Client-Side Routing |
+| **REST API Backend** | Render | [`planpulse-project-management-system.onrender.com`](https://planpulse-project-management-system.onrender.com) | Node.js Express REST API, Prisma ORM |
+| **Health Check** | Render | [`/api/health`](https://planpulse-project-management-system.onrender.com/api/health) | Returns database connectivity status & uptime |
+| **Database** | Render PostgreSQL | PostgreSQL 16 (Managed) | Auto-migrated via Prisma migrations |
+
+---
+
+### 1. Backend Web Service Configuration (Render)
+
+- **Service Type**: Web Service (Node.js)
+- **Repository Branch**: `master`
+- **Root Directory**: `backend`
+- **Build Command**: `npm install && npm run build`
+- **Start Command**: `npm start` *(runs `npx prisma migrate deploy && node dist/server.js`)*
+- **Environment Variables**:
+  | Variable | Example / Value | Description |
+  |---|---|---|
+  | `NODE_ENV` | `production` | Enables production error envelopes & security hardening |
+  | `DATABASE_URL` | `postgresql://...` | Connection URI to production PostgreSQL database |
+  | `JWT_SECRET` | *(secret)* | Cryptographic HMAC-SHA256 signing key (≥ 32 random characters) |
+  | `JWT_EXPIRES_IN` | `1d` | Token lifetime |
+  | `CORS_ORIGIN` | `https://plan-pulse-project-management-system-nxfwvyzvr.vercel.app,https://plan-pulse-project-management-system.vercel.app` | Comma-separated allowed frontend origins |
+  | `TRUST_PROXY` | `1` | Enables 1 reverse-proxy hop trust for Render load balancer |
+
+> **Automated Production Migrations**: The `npm start` command executes `npx prisma migrate deploy` in safe, transactional mode before starting Express. Every deployment automatically applies pending Prisma schema migrations to the database without data loss.
+
+---
+
+### 2. Frontend Application Configuration (Vercel)
+
+- **Framework Preset**: Vite
+- **Repository Branch**: `master`
+- **Root Directory**: `web`
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+- **Environment Variables**:
+  | Variable | Value | Description |
+  |---|---|---|
+  | `VITE_API_URL` | `https://planpulse-project-management-system.onrender.com/api` | Points Axios client to Render backend |
+- **SPA Client-Side Routing**: Configured via [`web/vercel.json`](web/vercel.json):
+  ```json
+  {
+    "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  }
+  ```
+  Ensures browser reloads on `/projects`, `/tasks`, `/profile`, `/login`, and `/register` resolve cleanly without HTTP 404 errors.
+- **Deployment Protection**: In Vercel Project Settings → *Deployment Protection*, toggle **Vercel Authentication** **OFF** to permit public access.
+
+---
+
+### 3. Standalone Android APK Distribution
 In production, end users install a standalone `.apk` without requiring Expo Go:
 ```bash
 # Install EAS CLI
