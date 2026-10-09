@@ -19,6 +19,7 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   taskCount?: number;
+  completedTaskCount?: number;
 }
 
 export interface Task {

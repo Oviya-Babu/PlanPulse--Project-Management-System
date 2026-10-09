@@ -8,6 +8,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFound';
 import healthRoutes from './routes/health.routes';
 import authRoutes from './routes/auth.routes';
+import projectsRoutes from './routes/projects.routes';
 
 export function createApp(): Express {
   const app = express();
@@ -62,6 +63,7 @@ export function createApp(): Express {
   // API Routes
   app.use('/api', healthRoutes);
   app.use('/api', authRoutes);
+  app.use('/api/projects', projectsRoutes);
 
   // 404 handler
   app.use(notFoundHandler);

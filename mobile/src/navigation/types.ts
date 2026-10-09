@@ -3,6 +3,11 @@ export type AuthStackParamList = {
   Register: undefined;
 };
 
+export type ProjectsStackParamList = {
+  ProjectsList: undefined;
+  ProjectDetails: { projectId: string; projectName?: string };
+};
+
 export type RootTabParamList = {
   Dashboard: undefined;
   Projects: undefined;

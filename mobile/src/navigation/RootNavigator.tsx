@@ -2,18 +2,46 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { Text } from 'react-native-paper';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { ProjectsScreen } from '../screens/ProjectsScreen';
+import { ProjectDetailsScreen } from '../screens/ProjectDetailsScreen';
 import { TasksScreen } from '../screens/TasksScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { NetworkErrorBanner } from '../components/NetworkErrorBanner';
-import { RootTabParamList } from './types';
+import { RootTabParamList, ProjectsStackParamList } from './types';
 import { colors } from '../theme';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
+const ProjectsStack = createNativeStackNavigator<ProjectsStackParamList>();
+
+function ProjectsStackNavigator() {
+  return (
+    <ProjectsStack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: '#FFFFFF' },
+        headerTitleStyle: { fontWeight: 'bold', color: '#0F172A' },
+        headerTintColor: colors.primary,
+      }}
+    >
+      <ProjectsStack.Screen
+        name="ProjectsList"
+        component={ProjectsScreen}
+        options={{ title: 'Projects' }}
+      />
+      <ProjectsStack.Screen
+        name="ProjectDetails"
+        component={ProjectDetailsScreen}
+        options={({ route }) => ({
+          title: route.params.projectName || 'Project Details',
+        })}
+      />
+    </ProjectsStack.Navigator>
+  );
+}
 
 export const RootNavigator: React.FC = () => {
   const { isAuthenticated, isLoading, networkError, retry } = useAuth();
@@ -79,8 +107,9 @@ export const RootNavigator: React.FC = () => {
         />
         <Tab.Screen
           name="Projects"
-          component={ProjectsScreen}
+          component={ProjectsStackNavigator}
           options={{
+            headerShown: false,
             title: 'Projects',
           }}
         />
