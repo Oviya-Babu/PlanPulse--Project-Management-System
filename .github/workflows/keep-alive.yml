@@ -1,0 +1,22 @@
+name: Keep Render Backend Active 24/7
+
+on:
+  schedule:
+    # Run every 10 minutes to prevent Render free instance from spinning down (15m idle threshold)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual ping from the GitHub Actions dashboard
+
+jobs:
+  ping-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping PlanPulse Health Check
+        run: |
+          echo "Pinging PlanPulse Render API health endpoint..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://planpulse-project-management-system.onrender.com/api/health)
+          echo "HTTP Status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "Render backend is awake, healthy, and active!"
+          else
+            echo "Notice: Endpoint returned HTTP $HTTP_STATUS"
+          fi
