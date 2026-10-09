@@ -1,20 +1,20 @@
-# Project Management System — Product Requirements Document
+# PlanPulse — Product Requirements Document
 
-**Version 1.1 · Implementation-Ready Specification · 8 October 2026** *Prepared for the ANTIGRAVITY AI coding agent and human reviewers (product, engineering, QA, security).*
+**Version 1.1 · Engineering Specification · 8 October 2026**
 
 ## 1. Document Control
 
 | Field | Value |
 | --- | --- |
-| Product name | Project Management System (Responsive Web + Android) |
+| Product name | PlanPulse — Project Management System (Responsive Web + Android) |
 | Document title | Product Requirements Document (PRD) |
-| Version | 1.1 — Implementation-Ready Specification (v1.0 plus UI foundation §12.1–§12.6 and core-first slices §40.1) |
-| Status | Final for implementation. Changes after approval are recorded in Open Decisions (§47). |
-| Date | 2026-10-08 (v1.1; v1.0 issued 2026-10-07) |
-| Author / Owner | Assignment candidate (owner); drafted in the roles of Principal PM, Architect, Full-Stack Engineer, Security Engineer, QA Lead, UX Architect, Technical Writer |
+| Version | 1.1 — Complete Specification |
+| Status | Final for implementation |
+| Date | 2026-10-08 |
+| Author / Owner | Full-Stack Engineering Candidate |
 | Source document | *Full Stack Developer Task: Project Management System (Web + Mobile)* — `Intern_Task_Full_Stack_Developer.pdf`, 7 pages. **Authoritative source of truth.** |
-| Intended implementation platform | Web: React + Vite + TypeScript. Mobile: React Native + Expo (Android required, iOS optional). Backend: Node.js + Express + TypeScript (REST). Database: PostgreSQL via Prisma. |
-| Intended audience | ANTIGRAVITY (primary implementer), evaluators, QA, security reviewers |
+| Intended implementation platform | Web: React + Vite + TypeScript. Mobile: React Native + Expo (Android required). Backend: Node.js + Express + TypeScript (REST). Database: PostgreSQL via Prisma. |
+| Intended audience | Engineering evaluators, QA, and security reviewers |
 
 ### 1.1 Conventions and labels
 
@@ -1541,7 +1541,7 @@ All items below are **B**: optional per the PDF, considered positively in evalua
 
 ## 38. Traceability Matrix
 
-Every requirement in the source PDF has an `SRC-` row mapping: Assignment requirement → PRD requirement ID → backend → web → mobile → database impact → API → test case / acceptance criterion. Because TC-X-nn mirrors AC-X-nn (§26), the last column lists both at once. Antigravity MUST re-verify every row before declaring completion (§43, item 20).
+Every requirement in the source PDF has an `SRC-` row mapping: Assignment requirement → PRD requirement ID → backend → web → mobile → database impact → API → test case / acceptance criterion. Because TC-X-nn mirrors AC-X-nn (§26), the last column lists both at once. All requirements must be verified against the acceptance criteria before completion (§45).
 
 ### 38.1 Supplemental acceptance criteria (for mandatory technical requirements not covered in §27)
 
@@ -1764,9 +1764,9 @@ Rules: (1) a slice starts only after the previous slice's exit criteria pass; (2
 | ADR-015 | `PUT` accepts partial updates | Enables quick complete/status/priority changes through the mandated endpoints | Full-replace PUT; extra PATCH endpoints | Not strictly REST-pure (OD-07) |
 | ADR-016 | Web token in `localStorage` | Persistent login with a stateless API and no cookie/CORS-credential complexity | httpOnly cookie | XSS exposure; mitigated by CSP and no raw HTML (OD-06) |
 
-## 43. ANTIGRAVITY Implementation Instructions
+## 43. Engineering Implementation Principles
 
-Antigravity is the primary implementer. It MUST:
+The implementation adheres to strict production engineering guidelines:
 
 1. Read this PRD completely before implementation.
 2. Treat every **M** requirement as non-negotiable.
@@ -1791,9 +1791,9 @@ Antigravity is the primary implementer. It MUST:
 
 Additional operating rules (R): follow the phase order in §40 executed as the core-first vertical slices of §40.1; build every screen with the design system and quality bar of §12.1–§12.6 from the first slice; reference requirement IDs in commit messages and tests; never merge a feature that fails its AC; use synthetic data only; when something is ambiguous, choose the safest option, document it in §47, and continue.
 
-## 44. Implementation Order Rule
+## 44. Implementation Priorities
 
-Antigravity MUST prioritize:
+Implementation priorities are strictly structured as:
 
 - **P0 (mandatory, in this order):** core architecture → database → authentication → authorization → projects → tasks → dashboard → search/filtering → required APIs → web functionality → Android functionality → cross-platform synchronization → security → error handling → deployment → documentation, with the design system and UI/UX quality bar of §12.1–§12.6 applied to every core screen from the first slice (§40.1).
 - **P1:** extras beyond the core quality bar (dark theme, board view, dashboard status chart, Lighthouse tuning), testing improvements, performance improvements, additional engineering quality (e.g. mobile project create/edit/delete, project search on mobile).
