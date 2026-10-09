@@ -43,7 +43,7 @@ export async function getMe(
 ): Promise<void> {
   try {
     const user = await authService.getUserById(req.userId!);
-    res.status(200).json({ user });
+    res.status(200).json({ user, data: user });
   } catch (err) {
     next(err);
   }
