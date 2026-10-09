@@ -19,7 +19,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000,
+  timeout: 60000,
 });
 
 // Request interceptor: attach bearer token
@@ -90,7 +90,7 @@ export function getApiErrorMessage(error: unknown): string {
 
     // Network / CORS / timeout errors
     if (error.code === 'ECONNABORTED' || error.message?.toLowerCase().includes('timeout')) {
-      return 'Request timed out. The server took too long to respond.';
+      return 'Request timed out. The server took too long to respond (Render free instances may take up to 50s to wake up from sleep). Please retry now.';
     }
     if (error.message === 'Network Error') {
       return 'Network Error: Unable to reach the backend server. Please verify the backend is online and CORS allows requests from this domain.';
