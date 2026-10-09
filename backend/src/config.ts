@@ -12,7 +12,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   BCRYPT_COST: z.coerce.number().min(4).max(20).default(12),
-  TRUST_PROXY: z.string().default('0'),
+  TRUST_PROXY: z.string().default(process.env.NODE_ENV === 'production' || process.env.RENDER === 'true' ? '1' : '0'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   RATE_LIMIT_LOGIN_MAX: z.coerce.number().default(10),
   RATE_LIMIT_LOGIN_WINDOW_MIN: z.coerce.number().default(15),

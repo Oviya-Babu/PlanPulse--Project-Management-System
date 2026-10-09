@@ -56,8 +56,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const res = await api.get<{ user: User }>('/auth/me');
         setUser(res.data.user);
         localStorage.setItem('pms_user', JSON.stringify(res.data.user));
-      } catch {
-        clearAuth();
+      } catch (err: unknown) {
+        // Only invalidate stored session if backend explicitly reports unauthorized (401 / 403)
+        // If it's a temporary network failure or cold-start delay, preserve cached session
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'response' in err &&
+          ((err as { response?: { status?: number } }).response?.status === 401 ||
+            (err as { response?: { status?: number } }).response?.status === 403)
+        ) {
+          clearAuth();
+        }
       } finally {
         setIsLoading(false);
       }

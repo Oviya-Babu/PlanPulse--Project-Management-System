@@ -15,9 +15,18 @@ import dashboardRoutes from './routes/dashboard.routes';
 export function createApp(): Express {
   const app = express();
 
-  // Trust proxy if configured (useful behind load balancers / reverse proxies)
-  if (config.TRUST_PROXY !== '0') {
-    app.set('trust proxy', config.TRUST_PROXY === '1' ? true : config.TRUST_PROXY);
+  // Trust proxy configuration for Render topology (1 reverse proxy hop)
+  // On Render (RENDER=true) or production or when TRUST_PROXY is configured, trust 1 front-facing proxy hop.
+  if (config.TRUST_PROXY === '1' || process.env.RENDER === 'true') {
+    app.set('trust proxy', 1);
+  } else if (config.TRUST_PROXY === 'true') {
+    app.set('trust proxy', 1);
+  } else if (!isNaN(Number(config.TRUST_PROXY)) && Number(config.TRUST_PROXY) > 0) {
+    app.set('trust proxy', Number(config.TRUST_PROXY));
+  } else if (config.NODE_ENV === 'production' && config.TRUST_PROXY !== '0') {
+    app.set('trust proxy', 1);
+  } else if (config.TRUST_PROXY !== '0' && config.TRUST_PROXY !== 'false') {
+    app.set('trust proxy', config.TRUST_PROXY);
   }
 
   // Security Headers via Helmet (SEC-004)
@@ -36,16 +45,40 @@ export function createApp(): Express {
   );
 
   // CORS Configuration (SEC-005)
-  const allowedOrigins = config.CORS_ORIGIN.split(',').map((o) => o.trim());
+  const parsedOrigins = config.CORS_ORIGIN.split(',')
+    .map((o) => o.trim().replace(/^["']|["']$/g, '').replace(/\/+$/, ''))
+    .filter(Boolean);
+
+  const standardOrigins = [
+    'https://plan-pulse-project-management-system-nxfwvyzvr.vercel.app',
+    'https://plan-pulse-project-management-system.vercel.app',
+    'https://planpulse-project-management-system.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:4173',
+    'http://127.0.0.1:5173',
+  ];
+
+  const allowedOriginsSet = new Set([...parsedOrigins, ...standardOrigins]);
+  const vercelPreviewRegex = /^https:\/\/(plan-pulse-project-management-system|planpulse)[a-z0-9-]*\.vercel\.app$/i;
+
+  const isOriginAllowed = (origin: string): boolean => {
+    const normalized = origin.trim().replace(/\/+$/, '');
+    if (allowedOriginsSet.has(normalized)) return true;
+    if (vercelPreviewRegex.test(normalized)) return true;
+    return false;
+  };
+
   app.use(
     cors({
       origin: (origin, callback) => {
         // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        if (isOriginAllowed(origin)) {
           return callback(null, true);
         }
-        return callback(new Error(`Origin ${origin} not allowed by CORS`));
+        // Do not throw Error; rejecting CORS cleanly omits headers without triggering HTTP 500
+        return callback(null, false);
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc && npx prisma generate",
-    "start": "node dist/server.js",
+    "start": "npx prisma migrate deploy && node dist/server.js",
+    "start:server": "node dist/server.js",
     "lint": "eslint src/ tests/ --ext .ts",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",

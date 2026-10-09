@@ -1,14 +1,25 @@
 import axios from 'axios';
 import { ApiError } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+function resolveApiBaseUrl(): string {
+  let url = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').trim();
+  // Strip trailing slashes
+  url = url.replace(/\/+$/, '');
+  // Guarantee /api suffix without duplication
+  if (!url.endsWith('/api')) {
+    url = `${url}/api`;
+  }
+  return url;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 15000,
 });
 
 // Request interceptor: attach bearer token
@@ -44,20 +55,51 @@ api.interceptors.response.use(
 );
 
 /**
- * Extracts a user-friendly error message from an API error response.
+ * Extracts a user-friendly, informative error message from an API error response.
  */
 export function getApiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
+    // If the server responded with our standard ApiError envelope
     const data = error.response?.data as ApiError | undefined;
     if (data?.error?.message) {
+      if (data.error.details && data.error.details.length > 0) {
+        const detailsStr = data.error.details
+          .map((d) => (d.field ? `${d.field}: ${d.message}` : d.message))
+          .join(', ');
+        return `${data.error.message} (${detailsStr})`;
+      }
       return data.error.message;
     }
+
+    // String error response
+    if (typeof error.response?.data === 'string' && error.response.data.trim()) {
+      return error.response.data;
+    }
+
+    // HTTP status with no body or generic body
+    if (error.response?.status) {
+      const status = error.response.status;
+      if (status === 502 || status === 503 || status === 504) {
+        return `Backend service is temporarily unavailable (HTTP ${status}). It may be cold-starting on Render.`;
+      }
+      if (status === 500) {
+        return 'Internal server error (500). Please check backend server logs.';
+      }
+      return `Request failed with status ${status}: ${error.response.statusText || 'Error'}`;
+    }
+
+    // Network / CORS / timeout errors
+    if (error.code === 'ECONNABORTED' || error.message?.toLowerCase().includes('timeout')) {
+      return 'Request timed out. The server took too long to respond.';
+    }
     if (error.message === 'Network Error') {
-      return 'Unable to connect to the server. Please check your network connection.';
+      return 'Network Error: Unable to reach the backend server. Please verify the backend is online and CORS allows requests from this domain.';
     }
   }
+
   if (error instanceof Error) {
     return error.message;
   }
+
   return 'An unexpected error occurred. Please try again.';
 }
