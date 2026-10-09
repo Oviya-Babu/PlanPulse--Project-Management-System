@@ -17,6 +17,7 @@
     "lint:mobile": "npm --prefix mobile run lint",
     "lint:all": "npm run lint:backend && npm run lint:web && npm run lint:mobile",
     "build:backend": "npm --prefix backend run build",
-    "build:web": "npm --prefix web run build"
+    "build:web": "npm --prefix web run build",
+    "build:mobile": "npm --prefix mobile run export:android"
   }
 }
