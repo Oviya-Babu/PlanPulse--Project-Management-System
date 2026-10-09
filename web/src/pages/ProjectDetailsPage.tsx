@@ -9,6 +9,7 @@ import {
   Edit2,
   Trash2,
   AlertCircle,
+  Plus,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -17,8 +18,12 @@ import { ErrorState } from '../components/ui/error-state';
 import { EmptyState } from '../components/ui/empty-state';
 import { ProjectDialog } from '../components/projects/ProjectDialog';
 import { DeleteProjectDialog } from '../components/projects/DeleteProjectDialog';
-import { Project, ProjectStatus } from '../types';
+import { TaskList } from '../components/tasks/TaskList';
+import { TaskDialog } from '../components/tasks/TaskDialog';
+import { DeleteTaskDialog } from '../components/tasks/DeleteTaskDialog';
+import { Project, ProjectStatus, Task } from '../types';
 import { getProjectById } from '../api/projects';
+import { getTasks } from '../api/tasks';
 import { getApiErrorMessage } from '../lib/api';
 
 export const ProjectDetailsPage: React.FC = () => {
@@ -26,22 +31,33 @@ export const ProjectDetailsPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [project, setProject] = useState<Project | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isNotFound, setIsNotFound] = useState(false);
 
-  // Dialogs
+  // Project dialogs
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const fetchProject = useCallback(async () => {
+  // Task dialogs
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [deletingTask, setDeletingTask] = useState<Task | null>(null);
+
+  const fetchProjectData = useCallback(async () => {
     if (!id) return;
     try {
       setIsLoading(true);
       setError(null);
       setIsNotFound(false);
-      const data = await getProjectById(id);
-      setProject(data);
+      const [projData, tasksData] = await Promise.all([
+        getProjectById(id),
+        getTasks({ projectId: id }),
+      ]);
+      setProject(projData);
+      setTasks(tasksData);
     } catch (err) {
       const msg = getApiErrorMessage(err);
       if (msg.includes('not found') || msg.includes('404')) {
@@ -54,9 +70,26 @@ export const ProjectDetailsPage: React.FC = () => {
     }
   }, [id]);
 
+  const refreshTasksOnly = useCallback(async () => {
+    if (!id) return;
+    try {
+      setIsLoadingTasks(true);
+      const [projData, tasksData] = await Promise.all([
+        getProjectById(id),
+        getTasks({ projectId: id }),
+      ]);
+      setProject(projData);
+      setTasks(tasksData);
+    } catch {
+      // Keep existing data on refresh error
+    } finally {
+      setIsLoadingTasks(false);
+    }
+  }, [id]);
+
   useEffect(() => {
-    fetchProject();
-  }, [fetchProject]);
+    fetchProjectData();
+  }, [fetchProjectData]);
 
   const getStatusBadge = (status: ProjectStatus) => {
     switch (status) {
@@ -110,13 +143,13 @@ export const ProjectDetailsPage: React.FC = () => {
       <ErrorState
         title="Unable to load this project."
         message={error || 'An unexpected error occurred.'}
-        onRetry={fetchProject}
+        onRetry={fetchProjectData}
       />
     );
   }
 
-  const taskCount = project.taskCount ?? 0;
-  const completedCount = project.completedTaskCount ?? 0;
+  const taskCount = tasks.length;
+  const completedCount = tasks.filter((t) => t.status === 'COMPLETED').length;
   const pendingCount = taskCount - completedCount;
   const progressPercent = taskCount > 0 ? Math.round((completedCount / taskCount) * 100) : 0;
 
@@ -238,36 +271,77 @@ export const ProjectDetailsPage: React.FC = () => {
               Deliverables and action items associated with this project.
             </p>
           </div>
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditingTask(null);
+              setIsTaskDialogOpen(true);
+            }}
+            className="flex items-center gap-1.5 shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Task</span>
+          </Button>
         </div>
 
-        {/* Empty state per AC-PROJ-08 / AC-TASK-09 */}
+        {/* Task list or Empty state */}
         {taskCount === 0 ? (
           <EmptyState
             icon={ListTodo}
             title="This project has no tasks yet."
-            description="Tasks added in Slice 3 will appear here, allowing you to track progress, priority, and completion."
+            description="Create your first task to start organizing deliverables and tracking completion."
+            actionLabel="Add Task"
+            onAction={() => {
+              setEditingTask(null);
+              setIsTaskDialogOpen(true);
+            }}
           />
         ) : (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900 text-center text-sm text-slate-500">
-            {taskCount} {taskCount === 1 ? 'task is' : 'tasks are'} registered for this project.
-          </div>
+          <TaskList
+            tasks={tasks}
+            isLoading={isLoadingTasks}
+            hideProjectTag={true}
+            onEditTask={(t) => {
+              setEditingTask(t);
+              setIsTaskDialogOpen(true);
+            }}
+            onDeleteTask={(t) => setDeletingTask(t)}
+            onTaskUpdated={refreshTasksOnly}
+          />
         )}
       </div>
 
-      {/* Edit Dialog */}
+      {/* Project Edit Dialog */}
       <ProjectDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         project={project}
-        onSuccess={fetchProject}
+        onSuccess={fetchProjectData}
       />
 
-      {/* Delete Dialog */}
+      {/* Project Delete Dialog */}
       <DeleteProjectDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         project={project}
         onSuccess={() => navigate('/projects')}
+      />
+
+      {/* Task Create/Edit Dialog */}
+      <TaskDialog
+        open={isTaskDialogOpen}
+        onOpenChange={setIsTaskDialogOpen}
+        task={editingTask}
+        defaultProjectId={project.id}
+        onSuccess={refreshTasksOnly}
+      />
+
+      {/* Task Delete Dialog */}
+      <DeleteTaskDialog
+        open={Boolean(deletingTask)}
+        onOpenChange={(open) => !open && setDeletingTask(null)}
+        task={deletingTask}
+        onSuccess={refreshTasksOnly}
       />
     </div>
   );
